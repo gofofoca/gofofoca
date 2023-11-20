@@ -1,0 +1,72 @@
+# https://taskfile.dev
+---
+version: '3'
+
+vars:
+  BIN: "{{.ROOT_DIR}}/bin"
+
+tasks:
+  default:
+    cmds:
+      - task: go:lint
+      - task: go:test
+
+  clean:
+    desc: Cleans temp files and directories
+    cmds:
+      - rm -rf .task/
+      - rm -rf bin/
+      - rm -rf dist/
+      - rm -rf tmp/
+
+  go:install:
+    desc: Installs GoFofoca
+    aliases: [i]
+    sources:
+      - './**/*.go'
+    cmds:
+      - go install -v ./cmd/gofofoca
+
+  go:mod:
+    desc: Downloads and tidy Go modules
+    cmds:
+      - go mod download
+      - go mod tidy
+
+  go:lint:
+    desc: Runs golangci-lint
+    aliases: [l]
+    sources:
+      - './**/*.go'
+      - .golangci.yml
+    cmds:
+      - golangci-lint run
+
+  go:lint:fix:
+    desc: Runs golangci-lint and fixes any issues
+    sources:
+      - './**/*.go'
+      - .golangci.yml
+    cmds:
+      - golangci-lint run --fix
+
+  go:test:
+    desc: Runs Go test suite
+    aliases: [t]
+    deps: [go:install]
+    cmds:
+      - go test {{catLines .GO_PACKAGES}}
+    vars:
+      GO_PACKAGES:
+        sh: go list ./...
+
+  go:releaser:install:
+    desc: Installs goreleaser
+    cmds:
+      - go install github.com/goreleaser/goreleaser@latest
+
+  go:releaser:test:
+    desc: Tests release process without publishing
+    deps: [go:releaser:install]
+    cmds:
+      - goreleaser --snapshot --clean
